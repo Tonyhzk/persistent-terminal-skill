@@ -2,6 +2,7 @@
 .claude
 .temp/
 0_Release/
+0_Backup/
 
 # ==================== Reference ====================
 0_Reference/

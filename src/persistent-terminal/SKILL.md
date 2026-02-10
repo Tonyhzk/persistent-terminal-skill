@@ -110,3 +110,7 @@ python3 %当前SKILL文件父目录%/scripts/persistent_terminal.py send --name 
   "output": "命令输出内容"
 }
 ```
+
+## 作者
+
+**Tonyhzk** · [GitHub](https://github.com/Tonyhzk) · [项目地址](https://github.com/Tonyhzk/persistent-terminal-skill)

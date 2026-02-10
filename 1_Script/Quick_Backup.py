@@ -17,7 +17,7 @@ import glob
 # ==================== 常量配置 ====================
 
 # 压缩包后缀名称
-PROJECT_NAME = "project"
+PROJECT_NAME = "persistent-terminal"
 
 # 备份目录（相对于脚本所在目录）
 BACKUP_DIR = Path("0_Backup")
@@ -25,13 +25,13 @@ BACKUP_DIR = Path("0_Backup")
 # 要打包的文件夹（支持相对路径）
 FOLDERS_TO_BACKUP = [
     "",
-    "",
+    "src",
 ]
 
 # 要打包的文件（支持相对路径和通配符，如 *.bat）
 FILES_TO_BACKUP = [
     "",
-    "CLAUDE.md",
+    "*.*",
     # "README.md",
 ]
 
@@ -47,6 +47,7 @@ FOLDERS_TO_SKIP = [
 # 要跳过的文件（支持相对路径和通配符）
 FILES_TO_SKIP = [
     "",
+    "setup_claude_dir.py",
     "*.pyc",
     "*.pyo",
     ".DS_Store",
