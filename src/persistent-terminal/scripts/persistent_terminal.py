@@ -35,7 +35,7 @@ def _find_claude_dir() -> Path:
 
 
 def setup_logger(script_name: str) -> logging.Logger:
-    log_dir = _find_claude_dir().parent / ".temp" / ".log"
+    log_dir = Path.cwd() / ".temp" / ".log"
     log_dir.mkdir(parents=True, exist_ok=True)
     logging.basicConfig(
         filename=str(log_dir / f"{script_name}.log"),
@@ -52,7 +52,7 @@ logger = setup_logger("persistent-terminal")
 # 注意：由于每次 Bash 调用是独立进程，会话无法在内存中跨调用保持。
 # 因此使用文件系统持久化会话信息，并通过 tmux/screen 或子进程管道实现持久化。
 
-SESSION_DIR = _find_claude_dir().parent / ".temp" / "terminal-sessions"
+SESSION_DIR = Path.cwd() / ".temp" / "terminal-sessions"
 SESSION_DIR.mkdir(parents=True, exist_ok=True)
 
 IS_WINDOWS = platform.system() == "Windows"
@@ -192,13 +192,8 @@ class TmuxBackend:
                 output = "\n".join(result_lines).rstrip()
                 break
         else:
-            # 超时，直接捕获当前面板内容
-            r = subprocess.run(
-                ["tmux", "capture-pane", "-t", name, "-p", "-S", "-50"],
-                capture_output=True, text=True,
-            )
-            output = r.stdout.rstrip()
-            return _result(True, session=name, output=output, warning="命令可能仍在执行中（超时）")
+            # 超时，只返回简短提示，不返回历史内容
+            return _result(True, session=name, output="", warning="命令执行超时，请稍后用 read 查看输出")
 
         logger.info(f"执行命令: session={name}, cmd={cmd}")
         return _result(True, session=name, output=output)
@@ -216,7 +211,7 @@ class TmuxBackend:
         return _result(True, session=name, message="文本已发送")
 
     @staticmethod
-    def read(name: str, lines: int = 50) -> str:
+    def read(name: str, lines: int = 30, max_chars: int = 2000, output_file: str = "") -> str:
         import subprocess
         r = subprocess.run(["tmux", "has-session", "-t", name], capture_output=True)
         if r.returncode != 0:
@@ -226,7 +221,19 @@ class TmuxBackend:
             ["tmux", "capture-pane", "-t", name, "-p", "-S", f"-{lines}"],
             capture_output=True, text=True,
         )
-        return _result(True, session=name, output=r.stdout.rstrip())
+        output = r.stdout.rstrip()
+        # 截断过长输出
+        if max_chars > 0 and len(output) > max_chars:
+            output = output[-max_chars:] + "\n... (输出已截断)"
+
+        # 如果指定了输出文件，写入文件并返回简短结果
+        if output_file:
+            out_path = Path(output_file)
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            out_path.write_text(output, encoding="utf-8")
+            return _result(True, session=name, output_file=output_file, lines_count=len(output.split("\n")))
+
+        return _result(True, session=name, output=output)
 
     @staticmethod
     def list_sessions() -> str:
@@ -441,15 +448,24 @@ with open(output, 'a') as out_f:
             return _result(False, error=str(e))
 
     @staticmethod
-    def read(name: str, lines: int = 50) -> str:
+    def read(name: str, lines: int = 50, output_file: str = "") -> str:
         pipe_dir = SESSION_DIR / name
-        output_file = pipe_dir / "output.log"
-        if not output_file.exists():
+        log_file = pipe_dir / "output.log"
+        if not log_file.exists():
             return _result(False, error=f"会话 '{name}' 不存在")
 
-        content = output_file.read_text(encoding="utf-8")
+        content = log_file.read_text(encoding="utf-8")
         last_lines = "\n".join(content.split("\n")[-lines:])
-        return _result(True, session=name, output=last_lines.rstrip())
+        output = last_lines.rstrip()
+
+        # 如果指定了输出文件，写入文件并返回简短结果
+        if output_file:
+            out_path = Path(output_file)
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            out_path.write_text(output, encoding="utf-8")
+            return _result(True, session=name, output_file=output_file, lines_count=len(output.split("\n")))
+
+        return _result(True, session=name, output=output)
 
     @staticmethod
     def list_sessions() -> str:
@@ -677,7 +693,9 @@ def parse_args():
     # read
     p_read = subparsers.add_parser("read", help="读取会话输出")
     p_read.add_argument("--name", required=True, help="会话名称")
-    p_read.add_argument("--lines", type=int, default=50, help="读取行数")
+    p_read.add_argument("--lines", type=int, default=30, help="读取行数（默认30）")
+    p_read.add_argument("--max-chars", type=int, default=2000, help="最大字符数（默认2000，0表示不限制）")
+    p_read.add_argument("--output", default="", help="输出到文件（不输出到 stdout，节省上下文）")
 
     # list
     subparsers.add_parser("list", help="列出所有会话")
@@ -720,7 +738,9 @@ def main():
     elif args.action == "exec":
         print(backend.exec_cmd(args.name, args.cmd, args.timeout))
     elif args.action == "read":
-        print(backend.read(args.name, args.lines))
+        max_chars = getattr(args, 'max_chars', 2000)
+        output_file = getattr(args, 'output', '')
+        print(backend.read(args.name, args.lines, max_chars, output_file))
     elif args.action == "list":
         result = json.loads(backend.list_sessions())
         result["backend"] = backend_name

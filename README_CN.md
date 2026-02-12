@@ -92,7 +92,9 @@ python3 setup_claude_dir.py status    # 查看当前状态
 | `--name` | 会话名称标识 |
 | `--cmd` | 要执行的命令 |
 | `--timeout` | exec 等待超时秒数（默认 10） |
-| `--lines` | read 读取行数（默认 50） |
+| `--lines` | read 读取行数（默认 30） |
+| `--max-chars` | read 最大字符数（默认 2000，0 为不限制） |
+| `--output` | read 输出到文件（不输出到 stdout，节省上下文） |
 | `--shell` | 指定 shell（默认：macOS/Linux 用 bash，Windows 用 cmd） |
 | `--background` | 后台创建，不弹出窗口 |
 | `--text` | 发送的纯文本内容 |

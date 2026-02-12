@@ -1,6 +1,6 @@
 ---
 name: persistent-terminal
-version: 1.1.0
+version: 1.2.0
 description: 跨平台持久终端会话管理。当需要在多轮对话中保持同一个终端会话、运行交互式程序、维持环境变量和进程状态时使用。关键词：持久终端、终端会话、交互式终端、persistent terminal、session。
 ---
 
@@ -26,6 +26,9 @@ python3 %当前SKILL文件父目录%/scripts/persistent_terminal.py exec --name 
 # 读取会话输出（获取最新输出）
 python3 %当前SKILL文件父目录%/scripts/persistent_terminal.py read --name SESSION_NAME
 
+# 读取会话输出并保存到文件（节省上下文，需指定更大的 max-chars）
+python3 %当前SKILL文件父目录%/scripts/persistent_terminal.py read --name SESSION_NAME --output .temp/terminal/output.txt --max-chars 0 --lines 5000
+
 # 列出所有活跃会话
 python3 %当前SKILL文件父目录%/scripts/persistent_terminal.py list
 
@@ -49,7 +52,9 @@ python3 %当前SKILL文件父目录%/scripts/persistent_terminal.py send --name 
 | `--name` | 会话名称，用于标识不同终端 |
 | `--cmd` | 要执行的命令 |
 | `--timeout` | exec 等待输出的超时秒数（默认 10） |
-| `--lines` | read 读取的行数（默认 50） |
+| `--lines` | read 读取的行数（默认 30） |
+| `--max-chars` | read 最大字符数（默认 2000，0 表示不限制） |
+| `--output` | read 输出到文件（不输出到 stdout，节省上下文） |
 | `--shell` | 指定 shell（默认：macOS/Linux 用 bash，Windows 用 cmd） |
 | `--background` | create 时不附着前台，后台静默创建 |
 | `--text` | send 时要发送的纯文本 |

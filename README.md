@@ -92,7 +92,9 @@ Once installed, invoke via `/tool-persistent-terminal` in Claude Code, or mentio
 | `--name` | Session name identifier |
 | `--cmd` | Command to execute |
 | `--timeout` | Exec wait timeout in seconds (default: 10) |
-| `--lines` | Number of lines to read (default: 50) |
+| `--lines` | Number of lines to read (default: 30) |
+| `--max-chars` | Max characters for read output (default: 2000, 0 for unlimited) |
+| `--output` | Write read output to file instead of stdout (saves context) |
 | `--shell` | Specify shell (default: bash on macOS/Linux, cmd on Windows) |
 | `--background` | Create session without attaching |
 | `--text` | Raw text to send |
